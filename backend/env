@@ -1,6 +1,0 @@
-DB_CONNECTION=ltwtw_luanhung-24f
-DB_HOST=127.0.0.1
-DB_PORT=3306
-DB_DATABASE=ltwtw_luanhung-24f_thltw
-DB_USERNAME=root
-DB_PASSWORD=
