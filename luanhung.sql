@@ -10,7 +10,7 @@ CREATE DATABASE IF NOT EXISTS `thltw-luanhung-24f`
   DEFAULT CHARACTER SET utf8mb4
   COLLATE utf8mb4_unicode_ci;
 
-USE `thltw-bahung-24f`;
+USE `thltw-luanhung-24f`;
 
 DROP TABLE IF EXISTS `banners`;
 CREATE TABLE `banners` (
