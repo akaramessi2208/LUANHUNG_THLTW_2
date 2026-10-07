@@ -1,30 +1,45 @@
 <?php
 
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-
-// Import các Controller
-use App\Http\Controllers\Api\CategoryController;
-use App\Http\Controllers\Api\BrandController;
+use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\ProductController;
-use App\Http\Controllers\Api\PaymentMethodController;
 
-/*
-|--------------------------------------------------------------------------
-| API Routes
-|--------------------------------------------------------------------------
-*/
 
-// 1. API Danh mục (Categories)
-Route::get('/categories', [CategoryController::class, 'index']);
-Route::get('/categories/{slug}', [CategoryController::class, 'show']);
+// =========================
+// AUTH
+// =========================
 
-// 2. API Thương hiệu (Brands)
-Route::get('/brands', [BrandController::class, 'index']);
+Route::post('/register', [AuthController::class, 'register']);
 
-// 3. API Sản phẩm (Products)
+Route::post('/login', [AuthController::class, 'login']);
+
+Route::post('/login-admin', [AuthController::class, 'loginAdmin']);
+
+
+// =========================
+// PRODUCT - PUBLIC
+// =========================
+
 Route::get('/products', [ProductController::class, 'index']);
 
-// 4. API CRUD Phương thức thanh toán (Payment Methods)
-// Tự động khai báo 5 route: GET (danh sách), POST (thêm), GET {id} (chi tiết), PUT {id} (sửa), DELETE {id} (xóa)
-Route::apiResource('payment-methods', PaymentMethodController::class);
+Route::get('/products/{id}', [ProductController::class, 'show']);
+
+
+// =========================
+// AUTHENTICATED
+// =========================
+
+Route::middleware('auth:sanctum')->group(function () {
+
+    Route::get('/me', [AuthController::class, 'me']);
+
+    Route::post('/logout', [AuthController::class, 'logout']);
+
+
+    // PRODUCT CRUD
+    Route::post('/products', [ProductController::class, 'store']);
+
+    Route::put('/products/{id}', [ProductController::class, 'update']);
+
+    Route::delete('/products/{id}', [ProductController::class, 'destroy']);
+});

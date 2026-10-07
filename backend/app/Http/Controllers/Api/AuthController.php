@@ -9,68 +9,113 @@ use Illuminate\Support\Facades\Hash;
 
 class AuthController extends Controller
 {
-    // Đăng ký account (/api/register)
+    // Đăng ký
+    // POST /api/register
     public function register(Request $request)
     {
         $fields = $request->validate([
-            'name'     => 'required|string',
-            'email'    => 'required|string|unique:users,email',
-            'phone'    => 'nullable|string',
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:users,email',
+            'phone' => 'nullable|string|max:20',
             'password' => 'required|string|min:6',
         ]);
 
         $user = User::create([
-            'name'     => $fields['name'],
-            'email'    => $fields['email'],
-            'phone'    => $fields['phone'] ?? null,
+            'name' => $fields['name'],
+            'email' => $fields['email'],
+            'phone' => $fields['phone'] ?? null,
             'password' => Hash::make($fields['password']),
         ]);
 
-        $token = $user->createToken('myapptoken')->plainTextToken;
+        $token = $user->createToken('user-token')->plainTextToken;
 
         return response()->json([
-            'user'  => $user,
-            'token' => $token
+            'message' => 'Đăng ký thành công',
+            'user' => $user,
+            'token' => $token,
         ], 201);
     }
 
-    // Đăng nhập (/api/login & /api/login-admin)
+
+    // Đăng nhập User
+    // POST /api/login
     public function login(Request $request)
     {
         $fields = $request->validate([
-            'email'    => 'required|string',
+            'email' => 'required|email',
             'password' => 'required|string',
         ]);
 
         $user = User::where('email', $fields['email'])->first();
 
         if (!$user || !Hash::check($fields['password'], $user->password)) {
-            return response()->json(['message' => 'Thông tin đăng nhập không hợp lệ!'], 401);
+            return response()->json([
+                'message' => 'Email hoặc mật khẩu không đúng'
+            ], 401);
         }
 
-        $token = $user->createToken('myapptoken')->plainTextToken;
+        $token = $user->createToken('user-token')->plainTextToken;
 
         return response()->json([
-            'user'  => [
-                'id'    => $user->id,
-                'name'  => $user->name,
-                'phone' => $user->phone,
-                'email' => $user->email,
-            ],
-            'token' => $token
-        ], 200);
+            'message' => 'Đăng nhập thành công',
+            'user' => $user,
+            'token' => $token,
+        ]);
     }
 
-    // Lấy thông tin cá nhân (/api/me)
+
+    // Đăng nhập Admin
+    // POST /api/login-admin
+    public function loginAdmin(Request $request)
+    {
+        $fields = $request->validate([
+            'email' => 'required|email',
+            'password' => 'required|string',
+        ]);
+
+        $user = User::where('email', $fields['email'])->first();
+
+        if (!$user || !Hash::check($fields['password'], $user->password)) {
+            return response()->json([
+                'message' => 'Email hoặc mật khẩu không đúng'
+            ], 401);
+        }
+
+        // Kiểm tra tài khoản admin
+        if (($user->role ?? 'user') !== 'admin') {
+            return response()->json([
+                'message' => 'Bạn không có quyền đăng nhập Admin'
+            ], 403);
+        }
+
+        $token = $user->createToken('admin-token')->plainTextToken;
+
+        return response()->json([
+            'message' => 'Đăng nhập Admin thành công',
+            'user' => $user,
+            'token' => $token,
+        ]);
+    }
+
+
+    // Thông tin user đang đăng nhập
+    // GET /api/me
     public function me(Request $request)
     {
-        return response()->json($request->user());
+        return response()->json([
+            'user' => $request->user(),
+        ]);
     }
 
-    // Đăng xuất (/api/logout)
+
+    // Đăng xuất
+    // POST /api/logout
     public function logout(Request $request)
     {
         $request->user()->currentAccessToken()->delete();
-        return response()->json(['message' => 'Đã đăng xuất thành công!']);
+
+        return response()->json([
+            'message' => 'Đăng xuất thành công',
+        ]);
     }
 }
