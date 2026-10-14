@@ -3,38 +3,139 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Http\Resources\CategoryResource;
 use App\Models\Category;
-use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 
 class CategoryController extends Controller
 {
-    // GET /api/categories
-    public function index(): AnonymousResourceCollection
+    // 1. Danh sách có phân trang
+    public function index(Request $request)
     {
-        $categories = Category::active()        // (1) scope của Model
-            ->whereNull('parent_id')            // (2) danh mục gốc
-            ->with(['children' => fn ($q) => $q->active()])  // (1)
-            ->orderBy('sort_order')             // (2) sắp xếp
-            ->get();                            // trả về tập Model
+        $limit = $request->get('limit', 10);
+        $categories = Category::select('id', 'name', 'slug', 'image', 'status', 'created_at')
+            ->orderBy('id', 'DESC')
+            ->paginate($limit);
 
-        return CategoryResource::collection($categories);
+        return response()->json([
+            'status' => true,
+            'message' => 'Lấy danh sách thành công',
+            'data' => $categories
+        ], 200);
     }
-        public function show(string $slug): CategoryResource
-    {
-        $category = Category::active()
-            ->where('slug', $slug)
-            ->with([
-                // Load danh mục con (nếu đây là danh mục cha)
-                'children' => fn ($q) => $q->active()->orderBy('sort_order'),
-                // Load danh mục cha (nếu đây là danh mục con)
-                'parent' => fn ($q) => $q->active(),
-                // Load danh sách sản phẩm thuộc danh mục (tuỳ chọn)
-                'products' => fn ($q) => $q->active()->latest()->paginate(12) 
-            ])
-            ->firstOrFail(); // Tự động trả về HTTP 404 nếu không tìm thấy slug
 
-        return new CategoryResource($category);
+    // 2. Thêm mới
+    public function store(Request $request)
+    {
+        $category = new Category();
+        $category->name = $request->name;
+        $category->slug = Str::slug($request->name);
+        $category->image = $request->image;
+        $category->status = $request->status ?? 1;
+        $category->save();
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Thêm danh mục thành công',
+            'data' => $category
+        ], 201);
+    }
+
+    // 3. Chi tiết
+    public function show($id)
+    {
+        $category = Category::find($id);
+        if (!$category) {
+            return response()->json(['status' => false, 'message' => 'Không tìm thấy danh mục'], 404);
+        }
+
+        return response()->json(['status' => true, 'data' => $category], 200);
+    }
+
+    // 4. Cập nhật
+    public function update(Request $request, $id)
+    {
+        $category = Category::find($id);
+        if (!$category) {
+            return response()->json(['status' => false, 'message' => 'Không tìm thấy danh mục'], 404);
+        }
+
+        $category->name = $request->name ?? $category->name;
+        if ($request->has('name')) {
+            $category->slug = Str::slug($request->name);
+        }
+        $category->image = $request->image ?? $category->image;
+        $category->status = $request->status ?? $category->status;
+        $category->save();
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Cập nhật thành công',
+            'data' => $category
+        ], 200);
+    }
+
+    // 5. Chuyển vào thùng rác (Soft Delete)
+    public function destroy($id)
+    {
+        $category = Category::find($id);
+        if (!$category) {
+            return response()->json(['status' => false, 'message' => 'Không tìm thấy danh mục'], 404);
+        }
+
+        $category->delete();
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Đã chuyển danh mục vào thùng rác'
+        ], 200);
+    }
+
+    // --- KHU VỰC THÙNG RÁC (TRASH) ---
+
+    // 6. Danh sách trong thùng rác
+    public function trash(Request $request)
+    {
+        $limit = $request->get('limit', 10);
+        $categories = Category::onlyTrashed()
+            ->orderBy('deleted_at', 'DESC')
+            ->paginate($limit);
+
+        return response()->json([
+            'status' => true,
+            'data' => $categories
+        ], 200);
+    }
+
+    // 7. Khôi phục
+    public function restore($id)
+    {
+        $category = Category::onlyTrashed()->find($id);
+        if (!$category) {
+            return response()->json(['status' => false, 'message' => 'Không tìm thấy trong thùng rác'], 404);
+        }
+
+        $category->restore();
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Khôi phục danh mục thành công'
+        ], 200);
+    }
+
+    // 8. Xóa vĩnh viễn
+    public function forceDelete($id)
+    {
+        $category = Category::onlyTrashed()->find($id);
+        if (!$category) {
+            return response()->json(['status' => false, 'message' => 'Không tìm thấy trong thùng rác'], 404);
+        }
+
+        $category->forceDelete();
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Đã xóa vĩnh viễn danh mục'
+        ], 200);
     }
 }
-
