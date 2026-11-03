@@ -1,16 +1,19 @@
 {
-    "private": true,
-    "type": "module",
-    "scripts": {
-        "build": "vite build",
-        "dev": "vite"
-    },
-    "devDependencies": {
-        "@tailwindcss/vite": "^4.0.0",
-        "axios": "^1.7.4",
-        "concurrently": "^9.0.1",
-        "laravel-vite-plugin": "^1.2.0",
-        "tailwindcss": "^4.0.0",
-        "vite": "^6.0.11"
-    }
+  "name": "luanhung-next",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --hostname 0.0.0.0 --port 4000",
+    "build": "next build",
+    "start": "next start --hostname 0.0.0.0 --port 4000",
+    "create-admin": "node scripts/create-admin.mjs",
+    "import-legacy-sql": "node scripts/import-legacy-sql.mjs"
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "next": "^16.4.3",
+    "nodemailer": "^10.2.1",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
+  }
 }
